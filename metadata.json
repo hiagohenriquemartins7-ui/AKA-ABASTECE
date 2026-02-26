@@ -1,0 +1,7 @@
+{
+  "name": "AKA Abastece",
+  "description": "Sistema PWA offline-first para controle de abastecimento de frotas e equipamentos com sincronização Google Sheets.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
