@@ -26,6 +26,7 @@ import AbastecimentoForm from './components/AbastecimentoForm';
 import EquipamentoForm from './components/EquipamentoForm';
 import ObrasList from './components/ObrasList';
 import UsuariosList from './components/UsuariosList';
+import Configuracoes from './components/Configuracoes';
 import Login from './components/Login';
 import { User } from './types';
 import { clsx, type ClassValue } from 'clsx';
@@ -40,7 +41,7 @@ export default function App() {
     const saved = localStorage.getItem('abastecepro_user');
     return saved ? JSON.parse(saved) : null;
   });
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'equipamentos' | 'abastecimentos' | 'obras' | 'usuarios'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'equipamentos' | 'abastecimentos' | 'obras' | 'usuarios' | 'configuracoes'>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [showFuelForm, setShowFuelForm] = useState(false);
@@ -112,7 +113,10 @@ export default function App() {
     { id: 'obras', label: 'Obras', icon: Building2 },
     { id: 'equipamentos', label: 'Equipamentos', icon: Truck },
     { id: 'abastecimentos', label: 'Abastecimentos', icon: Fuel },
-    ...(currentUser.role === 'MASTER' ? [{ id: 'usuarios', label: 'Usuários', icon: Users }] : []),
+    ...(currentUser.role === 'MASTER' ? [
+      { id: 'usuarios', label: 'Usuários', icon: Users },
+      { id: 'configuracoes', label: 'Configurações', icon: Settings }
+    ] : []),
   ];
 
   return (
@@ -239,6 +243,7 @@ export default function App() {
                   {activeTab === 'equipamentos' && 'Gerencie sua frota e ativos operacionais.'}
                   {activeTab === 'abastecimentos' && 'Registro e controle de consumo de combustível.'}
                   {activeTab === 'usuarios' && 'Controle de acesso e permissões.'}
+                  {activeTab === 'configuracoes' && 'Configurações do sistema e integrações.'}
                 </p>
               </div>
               
@@ -273,6 +278,7 @@ export default function App() {
               {activeTab === 'equipamentos' && <EquipamentosList user={currentUser} />}
               {activeTab === 'abastecimentos' && <AbastecimentosList user={currentUser} />}
               {activeTab === 'usuarios' && currentUser.role === 'MASTER' && <UsuariosList />}
+              {activeTab === 'configuracoes' && currentUser.role === 'MASTER' && <Configuracoes user={currentUser} />}
             </motion.div>
           </div>
         </div>

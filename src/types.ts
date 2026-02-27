@@ -9,6 +9,7 @@ export interface Obra {
   localizacao: string;
   status: 'Ativo' | 'Inativo';
   created_at: string;
+  updated_at?: string;
 }
 
 export interface User {

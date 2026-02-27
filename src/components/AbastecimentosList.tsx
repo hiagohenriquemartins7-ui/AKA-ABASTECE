@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { db } from '../db/db';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Fuel, Calendar, CheckCircle2, Clock, AlertCircle, Edit2, Trash2, Download, Upload } from 'lucide-react';
+import { Fuel, Calendar, CheckCircle2, Clock, AlertCircle, Edit2, Trash2, Download, Upload, FileText, FileSpreadsheet } from 'lucide-react';
 import { format } from 'date-fns';
 import AbastecimentoForm from './AbastecimentoForm';
 import { Abastecimento, User } from '../types';
 import { exportToExcel, importFromExcel } from '../services/dataService';
 import { syncEngine } from '../services/syncEngine';
 import ConfirmationModal from './ConfirmationModal';
+
+import { googleSheetsService } from '../services/googleSheetsService';
 
 interface Props {
   user: User;
@@ -23,9 +25,39 @@ export default function AbastecimentosList({ user }: Props) {
   const equipamentos = useLiveQuery(() => db.equipamentos.toArray()) || [];
   const [editingItem, setEditingItem] = useState<Abastecimento | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const getEquipName = (id: string) => equipamentos.find(e => e.id === id)?.nome || 'N/A';
   const getObraName = (id: string) => obras.find(o => o.id === id)?.nome || 'N/A';
+
+  const handleExportExcel = () => {
+    exportToExcel();
+    setShowExportMenu(false);
+  };
+
+  const handleExportSheets = async () => {
+    setIsSyncing(true);
+    try {
+      const dataToExport = abastecimentos.map(item => ({
+        ...item,
+        obra_nome: getObraName(item.obra_id),
+        equipamento_nome: getEquipName(item.equipamento_id),
+        equipamento_tipo: equipamentos.find(e => e.id === item.equipamento_id)?.tipo || 'N/A'
+      }));
+      await googleSheetsService.exportToSheets(dataToExport);
+      alert('Dados exportados para a planilha com sucesso!');
+    } catch (error: any) {
+      if (error.message === 'Google account not connected') {
+        alert('Sua conta Google não está conectada. Por favor, vá em Configurações para conectar ou use o modo "Sem Login" via Script.');
+      } else {
+        alert('Erro na exportação: ' + error.message);
+      }
+    } finally {
+      setIsSyncing(false);
+      setShowExportMenu(false);
+    }
+  };
 
   const handleDelete = async () => {
     if (!deleteId) return;
@@ -74,12 +106,34 @@ export default function AbastecimentosList({ user }: Props) {
           <Upload size={16} /> Importar Base
           <input type="file" className="hidden" accept=".xlsx,.csv" onChange={handleImport} />
         </label>
-        <button 
-          onClick={exportToExcel}
-          className="flex items-center gap-2 px-4 py-2 bg-white border border-stone-200 rounded-xl text-sm font-medium text-stone-600 hover:bg-stone-50 transition-all"
-        >
-          <Download size={16} /> Exportar Excel
-        </button>
+        
+        <div className="relative">
+          <button 
+            onClick={() => setShowExportMenu(!showExportMenu)}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-stone-200 rounded-xl text-sm font-medium text-stone-600 hover:bg-stone-50 transition-all"
+          >
+            <Download size={16} /> Exportar
+          </button>
+          
+          {showExportMenu && (
+            <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-stone-100 py-2 z-20">
+              <button 
+                onClick={handleExportExcel}
+                className="w-full text-left px-4 py-2 text-sm text-stone-600 hover:bg-stone-50 flex items-center gap-2"
+              >
+                <FileText size={16} className="text-blue-500" /> Exportar para Excel (.xlsx)
+              </button>
+              <button 
+                onClick={handleExportSheets}
+                disabled={isSyncing}
+                className="w-full text-left px-4 py-2 text-sm text-stone-600 hover:bg-stone-50 flex items-center gap-2 disabled:opacity-50"
+              >
+                <FileSpreadsheet size={16} className="text-emerald-500" /> 
+                {isSyncing ? 'Sincronizando...' : 'Atualizar Planilha Google'}
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
